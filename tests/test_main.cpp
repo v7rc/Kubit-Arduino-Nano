@@ -106,17 +106,22 @@ void testTankMixing() {
   assert(mix.m1 == 500 && mix.m2 == 0);
 
   MotorCommand command = makeMotorCommand(0, false);
-  assert(command.pwm == 0);
-  assert(command.directionHigh);
+  assert(command.stopped);
+  assert(command.pwmOutput == 0);
+  assert(!command.directionHigh);
 
   command = makeMotorCommand(500, false);
-  assert(command.pwm == 255 && command.directionHigh);
+  assert(!command.stopped && command.pwmOutput == 0 && command.directionHigh);
   command = makeMotorCommand(-500, false);
-  assert(command.pwm == 255 && !command.directionHigh);
+  assert(!command.stopped && command.pwmOutput == 255 && !command.directionHigh);
   command = makeMotorCommand(500, true);
-  assert(command.pwm == 255 && !command.directionHigh);
+  assert(!command.stopped && command.pwmOutput == 255 && !command.directionHigh);
   command = makeMotorCommand(250, false);
-  assert(command.pwm > 0 && command.pwm < 255);
+  assert(!command.stopped && command.pwmOutput > 0 &&
+         command.pwmOutput < 255 && command.directionHigh);
+  command = makeMotorCommand(-250, false);
+  assert(!command.stopped && command.pwmOutput > 0 &&
+         command.pwmOutput < 255 && !command.directionHigh);
 }
 }  // namespace
 

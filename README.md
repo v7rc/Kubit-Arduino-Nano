@@ -32,6 +32,19 @@ V7RC APP -- BLE --> 藍牙接收模組 -- UART --> Arduino Nano
 
 D0/RX 與 D1/TX 也連接 Nano 板載 USB-UART。燒錄韌體或由電腦模擬 V7RC 時，應先斷開外接接收板的 D0 訊號，避免接收板與 USB-UART 同時驅動 RX。
 
+## 馬達驅動介面
+
+照片中的 Kbot 載具板明確標示：左輪 `DIR D4 / PWM D5`，右輪 `DIR D7 / PWM D6`。左右輪的極短單輪實測確認，標示為 DIR/PWM 的兩腳實際構成雙輸入 H-bridge：
+
+| DIR | PWM | 實際結果 |
+| ---: | ---: | --- |
+| LOW | LOW | 停止／滑行 |
+| LOW | HIGH | 全速反轉 |
+| HIGH | LOW | 全速正轉 |
+| HIGH | HIGH | 停止／煞車 |
+
+正轉調速時 DIR 維持 HIGH，PWM 由 LOW（全速）往 HIGH（煞車）調整，因此使用反相 PWM；反轉時 DIR 維持 LOW，PWM 由 LOW（停止）往 HIGH（全速）調整。上電、中立及 300 ms failsafe 均將兩側 DIR/PWM 設為 LOW/LOW。
+
 ## V7RC VPP 協定
 
 坦克模式封包範例：
@@ -42,6 +55,8 @@ SRT1500150015001500#
 
 固定長度為 20 bytes：`SRT` + 四個 4 位數通道 + `#`。
 
+持續控制時，V7RC APP／發送端應每 30–50 ms 重送一次完整封包；本專案實機測試採 40 ms（25 Hz）。300 ms failsafe 僅是失聯安全界線，不能取代正常的週期送訊。
+
 | 通道 | 範圍 | 中心 | 本專案用途 |
 | --- | --- | --- | --- |
 | CH1 | 1000–2000 | 1500 | 左右轉向；預設 1000 左轉、2000 右轉 |
@@ -49,7 +64,7 @@ SRT1500150015001500#
 | CH3 | 1000–2000 us | 1500 us | D9 爪子舵機 |
 | CH4 | 1000–2000 us | 1500 us | D10 上下舵機 |
 
-預設馬達 deadband 為 1475–1525。超過 300 ms 沒有完整有效封包時，韌體會將兩路馬達 PWM 設為 0；舵機維持最後有效位置。
+預設馬達 deadband 為 1475–1525。超過 300 ms 沒有完整有效封包時，韌體會將 D4/D5、D7/D6 全部設為 LOW，停止兩路馬達；舵機維持最後有效位置。
 
 CH1 與 CH2 會先轉換為轉向量與油門量，再進行差速混控：
 
@@ -136,6 +151,8 @@ V M1=500 M2=500 S1=1500 S2=1500 FS=0
 
 除錯採「只輸出變化、100 ms 限頻、TX 緩衝有空間才送出」策略，避免 9600-baud 輸出阻塞 V7RC 接收。
 
+上述 100 ms 僅限 D1/TX 除錯輸出。送入 D0/RX 的 V7RC 控制封包仍應維持 30–50 ms 週期，建議測試程式使用 40 ms。
+
 ## 原始碼結構
 
 ```text
@@ -156,7 +173,7 @@ tests/
 ./tests/run_tests.sh
 ```
 
-目前 Nano 新、舊 bootloader FQBN 均已編譯通過。RX 模擬與 TX 除錯版本使用 4,784 bytes Flash（15%）及 295 bytes SRAM（14%）。
+目前 Nano 新、舊 bootloader FQBN 均已編譯通過；實機已使用新版 bootloader 的 `arduino:avr:nano:cpu=atmega328` 上傳成功。正式韌體使用 4,894 bytes Flash（15%）及 295 bytes SRAM（14%）。
 
 ## 文件
 

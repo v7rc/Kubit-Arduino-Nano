@@ -70,13 +70,29 @@ TankDriveMix mixTankDrive(uint16_t steeringChannel, uint16_t throttleChannel,
 
 MotorCommand makeMotorCommand(int16_t motorDemand, bool reversed) {
   motorDemand = constrainDemand(motorDemand);
-  const bool forward = motorDemand >= 0;
+  if (reversed) {
+    motorDemand = -motorDemand;
+  }
+
+  if (motorDemand == 0) {
+    MotorCommand stopped = {0, false, true};
+    return stopped;
+  }
+
+  const bool forward = motorDemand > 0;
   const uint16_t magnitude = static_cast<uint16_t>(
       forward ? motorDemand : -static_cast<int32_t>(motorDemand));
-  const uint8_t pwm = static_cast<uint8_t>(
+  const uint8_t drivePwm = static_cast<uint8_t>(
       (static_cast<uint32_t>(magnitude) * 255U + kMaximumDemand / 2) /
       kMaximumDemand);
 
-  MotorCommand command = {pwm, static_cast<bool>(forward != reversed)};
+  // Carrier truth table:
+  //   DIR=0, PWM=0 -> stop       DIR=1, PWM=0 -> full forward
+  //   DIR=0, PWM=1 -> reverse    DIR=1, PWM=1 -> brake
+  // Forward uses inverted PWM (forward/brake); reverse uses normal PWM
+  // (reverse/coast).
+  MotorCommand command = {
+      static_cast<uint8_t>(forward ? 255U - drivePwm : drivePwm), forward,
+      false};
   return command;
 }

@@ -25,14 +25,22 @@ uint16_t constrainPulse(uint16_t value, uint16_t minimum, uint16_t maximum) {
 
 void applyMotor(uint8_t directionPin, uint8_t pwmPin,
                 const MotorCommand& command) {
-  // PWM is cleared before changing direction to reduce abrupt transients.
+  // Enter the safe H-bridge state (DIR=LOW, PWM=LOW) before changing mode.
   analogWrite(pwmPin, 0);
+  digitalWrite(directionPin, LOW);
+  if (command.stopped) {
+    return;
+  }
+
   digitalWrite(directionPin, command.directionHigh ? HIGH : LOW);
-  analogWrite(pwmPin, command.pwm);
+  analogWrite(pwmPin, command.pwmOutput);
 }
 }  // namespace
 
 void actuatorsBegin() {
+  // Preload the safe H-bridge state before enabling output mode.
+  digitalWrite(Config::M1_PWM_PIN, LOW);
+  digitalWrite(Config::M2_PWM_PIN, LOW);
   pinMode(Config::M1_PWM_PIN, OUTPUT);
   pinMode(Config::M2_PWM_PIN, OUTPUT);
   analogWrite(Config::M1_PWM_PIN, 0);
@@ -80,6 +88,8 @@ AppliedVehicleState applyPacket(const V7RCPacket& packet) {
 void stopMotors() {
   analogWrite(Config::M1_PWM_PIN, 0);
   analogWrite(Config::M2_PWM_PIN, 0);
+  digitalWrite(Config::M1_DIRECTION_PIN, LOW);
+  digitalWrite(Config::M2_DIRECTION_PIN, LOW);
 }
 
 void startBuzzer(unsigned long now, unsigned long durationMs) {

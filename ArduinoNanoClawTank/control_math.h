@@ -4,8 +4,11 @@
 #include <stdint.h>
 
 struct MotorCommand {
-  uint8_t pwm;
+  // The carrier exposes two H-bridge inputs as DIR and PWM. pwmOutput is the
+  // physical analogWrite value; the mapping depends on direction.
+  uint8_t pwmOutput;
   bool directionHigh;
+  bool stopped;
 };
 
 struct TankDriveMix {
