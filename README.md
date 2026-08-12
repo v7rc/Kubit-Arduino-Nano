@@ -1,0 +1,96 @@
+# Arduino Nano Claw Tank
+
+這是一個安裝於小型載具機器人的 Arduino Nano 韌體專案。V7RC APP 透過 BLE 連接外接藍牙接收模組；模組再以 UART 將 V7RC VPP 坦克模式封包送至 Nano。Nano 解析左右履帶、爪子與升降通道，驅動兩路直流馬達及舵機。
+
+目前階段是規格與 MVP 規劃，尚未加入 `.ino` 韌體。
+
+## 系統資料流
+
+```text
+V7RC APP -- BLE --> 藍牙接收模組 -- UART --> Arduino Nano
+                                                    |-- M1 / M2 馬達驅動
+                                                    |-- D9 / D10 / D11 舵機
+                                                    `-- D8 蜂鳴器
+```
+
+## 預設接線
+
+| Nano 腳位 | 功能 | 外部連接 |
+| --- | --- | --- |
+| D2 | SoftwareSerial RX | 藍牙 TX |
+| D3 | SoftwareSerial TX | 藍牙 RX |
+| D4 | M1 DIR | 馬達驅動器 M1 方向 |
+| D5 | M1 PWM | 馬達驅動器 M1 速度 |
+| D6 | M2 PWM | 馬達驅動器 M2 速度 |
+| D7 | M2 DIR | 馬達驅動器 M2 方向 |
+| D8 | 蜂鳴器 | 蜂鳴器訊號 |
+| D9 | Servo 1 | 爪子，channel 3 |
+| D10 | Servo 2 | 上下，channel 4 |
+| D11 | Servo 3 | 尚未指定，MVP 保持中立 |
+
+所有模組必須共地。Nano I/O 為 5V 邏輯；若藍牙模組 RX 僅容許 3.3V，Nano D3 到模組 RX 之間要加入分壓器或邏輯電平轉換器。舵機與馬達不可直接由 Nano 的 5V 腳供電，應使用容量足夠的獨立電源並共地，以免重啟或損壞板子。
+
+## V7RC VPP 協定
+
+坦克模式封包範例：
+
+```text
+SRT1500150015001500#
+```
+
+固定長度為 20 bytes：`SRT` + 四個 4 位數通道 + `#`。
+
+| 通道 | 範圍 | 中心 | 本專案用途 |
+| --- | --- | --- | --- |
+| CH1 | 1000–2000 | 1500 | M1 左馬達，反向至正向 |
+| CH2 | 1000–2000 | 1500 | M2 右馬達，反向至正向 |
+| CH3 | 1000–2000 us | 1500 us | D9 爪子舵機 |
+| CH4 | 1000–2000 us | 1500 us | D10 上下舵機 |
+
+預設馬達 deadband 為 1475–1525。超過 300 ms 沒有完整有效封包時，韌體會將兩路馬達 PWM 設為 0；舵機維持最後有效位置。
+
+## 開發需求與函式庫
+
+目標環境：
+
+- Arduino Nano（經典 ATmega328P；實際版本待確認）
+- Arduino AVR Boards core（FQBN：`arduino:avr:nano`）
+- `Servo`：Arduino 官方舵機函式庫，控制 D9–D11
+- `SoftwareSerial`：Arduino AVR core 內建，用 D2/D3 接藍牙 UART，通常不需額外安裝
+
+若使用 Arduino CLI，可準備相依項目：
+
+```bash
+arduino-cli core install arduino:avr
+arduino-cli lib install Servo
+```
+
+本工作區預期使用共用 Arduino CLI Docker container；韌體加入後可從專案根目錄執行：
+
+```bash
+/Users/louischuang/.codex/skills/arduino-cli-container/scripts/arduino-container version
+/Users/louischuang/.codex/skills/arduino-cli-container/scripts/arduino-container core list
+/Users/louischuang/.codex/skills/arduino-cli-container/scripts/arduino-container compile \
+  --fqbn arduino:avr:nano:cpu=atmega328old \
+  /workspace/ArduinoNanoClawTank
+```
+
+部分 Nano 使用新版 bootloader，這時將 FQBN 改為 `arduino:avr:nano:cpu=atmega328`。編譯不受 bootloader 選項影響太大，但實機上傳時必須選對處理器版本。
+
+## 預計設定值
+
+實作時會把以下內容集中放在 `config.h`，以便實機校正：
+
+- 藍牙 UART 鮑率（暫定 9600）
+- 左右馬達方向反轉
+- deadband（預設 ±25）
+- failsafe timeout（預設 300 ms）
+- 各舵機最小、中立、最大脈寬
+- D2/D3 軟體 UART或 D0/D1 硬體 UART
+
+## 文件
+
+- `AGENTS.md`：後續開發代理需遵守的架構、安全及驗證規則。
+- `MVP.md`：首版可交付範圍與驗收標準。
+- `TODO.md`：依相依關係排序的實作清單與待確認事項。
+
