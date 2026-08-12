@@ -13,28 +13,28 @@
 
 ## P1：MVP 韌體
 
-- [ ] 建立 `ArduinoNanoClawTank/ArduinoNanoClawTank.ino` 與集中設定檔。
-- [ ] 實作啟動安全順序：PWM 先歸零，再初始化 UART、舵機及蜂鳴器。
-- [ ] 實作不使用 `String` 的逐 byte `SRT` 狀態機解析器。
-- [ ] 驗證 20-byte 格式、四個數值欄位、`#` 及 1000–2000 範圍。
-- [ ] 實作從任意雜訊與壞封包重新同步。
-- [ ] 實作 CH1/CH2 的 deadband、方向及 PWM 映射。
-- [ ] 加入 M1/M2 獨立反轉設定。
-- [ ] 實作 CH3 → D9、CH4 → D10 的微秒舵機控制。
-- [ ] 將 D11 初始化至可設定中立位置，在用途確認前不由封包改動。
-- [ ] 實作 300 ms 有效封包 failsafe，停止 D5/D6 PWM。
-- [ ] 實作可停用的非阻塞蜂鳴器狀態提示。
-- [ ] 保留 USB 除錯輸出，但確保不會寫入藍牙協定 UART。
+- [x] 建立 `ArduinoNanoClawTank/ArduinoNanoClawTank.ino` 與集中設定檔。
+- [x] 實作啟動安全順序：PWM 先歸零，再初始化 UART、舵機及蜂鳴器。
+- [x] 實作不使用 `String` 的逐 byte `SRT` 狀態機解析器。
+- [x] 驗證 20-byte 格式、四個數值欄位、`#` 及 1000–2000 範圍。
+- [x] 實作從任意雜訊與壞封包重新同步。
+- [x] 實作 CH1/CH2 的 deadband、方向及 PWM 映射。
+- [x] 加入 M1/M2 獨立反轉設定。
+- [x] 實作 CH3 → D9、CH4 → D10 的微秒舵機控制。
+- [x] 將 D11 初始化至可設定中立位置，在用途確認前不由封包改動。
+- [x] 實作 300 ms 有效封包 failsafe，停止 D5/D6 PWM。
+- [x] 實作可停用的非阻塞蜂鳴器狀態提示。
+- [x] 保留 USB 除錯輸出，但確保不會寫入藍牙協定 UART。
 
 ## P1：驗證
 
-- [ ] 檢查共用 Arduino CLI container、AVR core 與 Servo library。
-- [ ] 以 `arduino:avr:nano:cpu=atmega328old` 編譯。
-- [ ] 視實際板型再以 `arduino:avr:nano:cpu=atmega328` 編譯／上傳驗證。
-- [ ] 建立協定測試向量：中立、極值、deadband 邊界及一般比例值。
-- [ ] 測試半包、黏包、雜訊、非數字、少字元、多字元、錯誤 `#`、超範圍。
-- [ ] 驗證只有完整有效封包會刷新 failsafe 計時器。
-- [ ] 記錄編譯後 Flash 與 SRAM 使用量。
+- [x] 檢查共用 Arduino CLI container、AVR core 與 Servo library。
+- [x] 以 `arduino:avr:nano:cpu=atmega328old` 編譯。
+- [x] 以 `arduino:avr:nano:cpu=atmega328` 編譯（實機上傳仍待板型確認）。
+- [x] 建立協定測試向量：中立、極值、deadband 邊界及一般比例值。
+- [x] 測試半包、黏包、雜訊、非數字、少字元、多字元、錯誤 `#`、超範圍。
+- [x] 以程式結構及解析器測試確認只有完整有效封包會刷新 failsafe 計時器。
+- [x] 記錄編譯後使用量：Flash 5,304 bytes（17%）、SRAM 379 bytes（18%）。
 - [ ] 以示波器／邏輯分析儀確認 D5/D6 PWM 與 D9/D10 舵機脈寬。
 - [ ] 架空車輪進行實機方向測試，再落地低速測試。
 - [ ] 逐顆校正舵機安全最小／最大值，避免堵轉。

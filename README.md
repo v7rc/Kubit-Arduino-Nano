@@ -2,7 +2,7 @@
 
 這是一個安裝於小型載具機器人的 Arduino Nano 韌體專案。V7RC APP 透過 BLE 連接外接藍牙接收模組；模組再以 UART 將 V7RC VPP 坦克模式封包送至 Nano。Nano 解析左右履帶、爪子與升降通道，驅動兩路直流馬達及舵機。
 
-目前階段是規格與 MVP 規劃，尚未加入 `.ino` 韌體。
+目前已提供 MVP 韌體、純 C++ 協定／控制測試及 Arduino CLI 編譯流程。實機使用前仍須確認藍牙鮑率、馬達方向及舵機安全行程。
 
 ## 系統資料流
 
@@ -88,9 +88,32 @@ arduino-cli lib install Servo
 - 各舵機最小、中立、最大脈寬
 - D2/D3 軟體 UART或 D0/D1 硬體 UART
 
+設定集中於 `ArduinoNanoClawTank/config.h`。目前實作採用 D2/D3 軟體 UART；若要改用 D0/D1，需在實作層切換通訊介面，並停用同一 UART 上的除錯輸出。
+
+## 原始碼結構
+
+```text
+ArduinoNanoClawTank/
+├── ArduinoNanoClawTank.ino  # setup、主迴圈、UART 與 failsafe
+├── config.h                 # 腳位與可校正參數
+├── v7rc_protocol.*          # 無動態配置的逐 byte 解析器
+├── control_math.*           # deadband、方向與 PWM 映射
+└── actuators.*              # 馬達、舵機與非阻塞蜂鳴器輸出
+tests/
+├── test_main.cpp            # 主機端協定與控制測試
+└── run_tests.sh             # 測試編譯及執行腳本
+```
+
+執行不需要 Arduino 硬體的測試：
+
+```bash
+./tests/run_tests.sh
+```
+
+目前 Nano 新、舊 bootloader FQBN 均已編譯通過。MVP build 使用 5,304 bytes Flash（17%）及 379 bytes SRAM（18%）。
+
 ## 文件
 
 - `AGENTS.md`：後續開發代理需遵守的架構、安全及驗證規則。
 - `MVP.md`：首版可交付範圍與驗收標準。
 - `TODO.md`：依相依關係排序的實作清單與待確認事項。
-
