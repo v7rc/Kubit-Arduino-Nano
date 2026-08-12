@@ -1,11 +1,11 @@
 # TODO
 
-## P0：實作前確認
+## P0：實機測試前確認
 
 - [ ] 確認 Arduino Nano 型號、處理器及新／舊 bootloader。
 - [ ] 確認藍牙模組型號、UART 鮑率、資料格式（預期 8N1）及 RX 電壓容許值。
-- [ ] 確認藍牙 UART 實際接 D2/D3，或要求使用 D0/D1 硬體 UART。
-- [ ] 確認 `SRT` 封包沒有 CR/LF；若有，解析器應安全忽略。
+- [x] V7RC 接收資料固定使用 D0/RX 硬體 UART；D1/TX 不接線。
+- [x] 解析器可安全忽略封包前後的 CR/LF 與其他非協定字元。
 - [ ] 確認 M1/M2 哪個是左／右，以及各 DIR 腳位的正向電位。
 - [ ] 確認馬達驅動板型號及 PWM=0 時為 coast 或 brake。
 - [ ] 確認三顆舵機的用途、機構安全行程與 D11 的控制來源。
@@ -13,28 +13,32 @@
 
 ## P1：MVP 韌體
 
-- [ ] 建立 `ArduinoNanoClawTank/ArduinoNanoClawTank.ino` 與集中設定檔。
-- [ ] 實作啟動安全順序：PWM 先歸零，再初始化 UART、舵機及蜂鳴器。
-- [ ] 實作不使用 `String` 的逐 byte `SRT` 狀態機解析器。
-- [ ] 驗證 20-byte 格式、四個數值欄位、`#` 及 1000–2000 範圍。
-- [ ] 實作從任意雜訊與壞封包重新同步。
-- [ ] 實作 CH1/CH2 的 deadband、方向及 PWM 映射。
-- [ ] 加入 M1/M2 獨立反轉設定。
-- [ ] 實作 CH3 → D9、CH4 → D10 的微秒舵機控制。
-- [ ] 將 D11 初始化至可設定中立位置，在用途確認前不由封包改動。
-- [ ] 實作 300 ms 有效封包 failsafe，停止 D5/D6 PWM。
-- [ ] 實作可停用的非阻塞蜂鳴器狀態提示。
-- [ ] 保留 USB 除錯輸出，但確保不會寫入藍牙協定 UART。
+- [x] 建立 `ArduinoNanoClawTank/ArduinoNanoClawTank.ino` 與集中設定檔。
+- [x] 實作啟動安全順序：PWM 先歸零，再初始化 UART、舵機及蜂鳴器。
+- [x] 實作不使用 `String` 的逐 byte `SRT` 狀態機解析器。
+- [x] 驗證 20-byte 格式、四個數值欄位、`#` 及 1000–2000 範圍。
+- [x] 實作從任意雜訊與壞封包重新同步。
+- [x] 實作 CH1 轉向與 CH2 油門的 deadband、差速混控及 PWM 映射。
+- [x] 移除 CH1 直控 M1、CH2 直控 M2 的錯誤映射。
+- [x] 加入 CH1 轉向獨立反轉設定。
+- [x] 加入 M1/M2 獨立反轉設定。
+- [x] 實作 CH3 → D9、CH4 → D10 的微秒舵機控制。
+- [x] 將 D11 初始化至可設定中立位置，在用途確認前不由封包改動。
+- [x] 實作 300 ms 有效封包 failsafe，停止 D5/D6 PWM。
+- [x] 實作可停用的非阻塞蜂鳴器狀態提示。
+- [x] 移除 UART 除錯輸出與 `SoftwareSerial`；硬體 `Serial` 僅接收 V7RC 資料。
 
 ## P1：驗證
 
-- [ ] 檢查共用 Arduino CLI container、AVR core 與 Servo library。
-- [ ] 以 `arduino:avr:nano:cpu=atmega328old` 編譯。
-- [ ] 視實際板型再以 `arduino:avr:nano:cpu=atmega328` 編譯／上傳驗證。
-- [ ] 建立協定測試向量：中立、極值、deadband 邊界及一般比例值。
-- [ ] 測試半包、黏包、雜訊、非數字、少字元、多字元、錯誤 `#`、超範圍。
-- [ ] 驗證只有完整有效封包會刷新 failsafe 計時器。
-- [ ] 記錄編譯後 Flash 與 SRAM 使用量。
+- [x] 檢查共用 Arduino CLI container、AVR core 與 Servo library。
+- [x] 以 `arduino:avr:nano:cpu=atmega328old` 編譯。
+- [x] 以 `arduino:avr:nano:cpu=atmega328` 編譯（實機上傳仍待板型確認）。
+- [x] 建立協定測試向量：中立、極值、deadband 邊界及一般比例值。
+- [x] 驗證 CH2 控制兩顆馬達同向前進／後退，CH1 控制兩顆馬達差速轉向。
+- [x] 驗證 CH1 與 CH2 同時操作時，混控結果會正確飽和至 -500 至 +500。
+- [x] 測試半包、黏包、雜訊、非數字、少字元、多字元、錯誤 `#`、超範圍。
+- [x] 以程式結構及解析器測試確認只有完整有效封包會刷新 failsafe 計時器。
+- [x] 記錄 D0/RX 硬體 UART 版本使用量：Flash 3,920 bytes（12%）、SRAM 260 bytes（12%）。
 - [ ] 以示波器／邏輯分析儀確認 D5/D6 PWM 與 D9/D10 舵機脈寬。
 - [ ] 架空車輪進行實機方向測試，再落地低速測試。
 - [ ] 逐顆校正舵機安全最小／最大值，避免堵轉。
@@ -51,6 +55,7 @@
 ## 決策紀錄
 
 - 2026-08-12：首版假設經典 Nano ATmega328P。
-- 2026-08-12：為保留 USB Serial 除錯，預設以 D2/D3 `SoftwareSerial` 接藍牙，暫定 9600 baud。
+- 2026-08-12：硬體修正為單線接收；V7RC UART 固定接 D0/RX、暫定 9600 baud，D1/TX 不接線，不使用 `SoftwareSerial` 或 UART 除錯輸出。
 - 2026-08-12：CH3 控制 D9 爪子，CH4 控制 D10 上下；D11 暫時保持中立。
 - 2026-08-12：預設 deadband ±25、通訊 failsafe 300 ms；失聯停止馬達但保持舵機位置。
+- 2026-08-12：修正控制定義；CH1 為左右轉向、CH2 為前進／後退，採 `M1 = throttle + steering`、`M2 = throttle - steering` 混控。
