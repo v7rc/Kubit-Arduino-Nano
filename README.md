@@ -17,8 +17,8 @@ V7RC APP -- BLE --> 藍牙接收模組 -- UART --> Arduino Nano
 
 | Nano 腳位 | 功能 | 外部連接 |
 | --- | --- | --- |
-| D0/RX | Hardware Serial RX | V7RC 接收板唯一的 UART 資料輸入；只接收 |
-| D1/TX | Hardware Serial TX | 不接藍牙；韌體不傳送資料 |
+| D0/RX | Hardware Serial RX | 接收 V7RC 封包，或接收電腦送入的模擬封包 |
+| D1/TX | Hardware Serial TX | 輸出載具狀態變化，不接藍牙接收板 |
 | D4 | M1 DIR | 馬達驅動器 M1 方向 |
 | D5 | M1 PWM | 馬達驅動器 M1 速度 |
 | D6 | M2 PWM | 馬達驅動器 M2 速度 |
@@ -28,9 +28,9 @@ V7RC APP -- BLE --> 藍牙接收模組 -- UART --> Arduino Nano
 | D10 | Servo 2 | 上下，channel 4 |
 | D11 | Servo 3 | 尚未指定，MVP 保持中立 |
 
-所有模組必須共地。V7RC 接收資料固定進入 Nano D0/RX，沒有回傳線，D1/TX 保持不接。必須確認接收板輸出電壓與 Nano D0 相容。舵機與馬達不可直接由 Nano 的 5V 腳供電，應使用容量足夠的獨立電源並共地，以免重啟或損壞板子。
+所有模組必須共地。V7RC 接收資料固定進入 Nano D0/RX；藍牙接收板沒有 TX 除錯連線，D1/TX 可留給 USB-UART 或外接序列監看器。必須確認接收板輸出電壓與 Nano D0 相容。舵機與馬達不可直接由 Nano 的 5V 腳供電，應使用容量足夠的獨立電源並共地，以免重啟或損壞板子。
 
-D0/RX 也連接 Nano 板載 USB-UART。燒錄韌體或從電腦向 Serial Monitor 傳送資料時，外接接收板可能與 USB-UART 同時驅動 D0；若遇到上傳失敗或資料異常，應先斷開 D0 訊號線，燒錄完成後再接回。韌體不使用 `Serial.print()`，也不由 D1/TX 傳送除錯資料。
+D0/RX 與 D1/TX 也連接 Nano 板載 USB-UART。燒錄韌體或由電腦模擬 V7RC 時，應先斷開外接接收板的 D0 訊號，避免接收板與 USB-UART 同時驅動 RX。
 
 ## V7RC VPP 協定
 
@@ -80,7 +80,7 @@ M2 = throttle - steering
 - Arduino Nano（經典 ATmega328P；實際版本待確認）
 - Arduino AVR Boards core（FQBN：`arduino:avr:nano`）
 - `Servo`：Arduino 官方舵機函式庫，控制 D9–D11
-- 硬體 `Serial`：Arduino AVR core 內建，使用 D0/RX 接收資料，不需額外函式庫
+- 硬體 `Serial`：Arduino AVR core 內建，D0/RX 接收資料、D1/TX 輸出除錯，不需額外函式庫
 
 若使用 Arduino CLI，可準備相依項目：
 
@@ -112,8 +112,29 @@ arduino-cli lib install Servo
 - failsafe timeout（預設 300 ms）
 - 各舵機最小、中立、最大脈寬
 - D0/RX 硬體 UART 接收鮑率（預設 9600）
+- D1/TX 除錯輸出開關與最小間隔（預設啟用、100 ms）
 
-設定集中於 `ArduinoNanoClawTank/config.h`。目前固定使用 D0/RX 硬體 UART，且沒有 UART 除錯輸出；D1/TX 不接藍牙。
+設定集中於 `ArduinoNanoClawTank/config.h`。D0/RX 與 D1/TX 使用相同的 9600 baud；D1/TX 不接藍牙接收板。
+
+## UART 測試與除錯
+
+可用 Arduino Serial Monitor 或其他序列終端，以 9600 baud 將封包送入 D0/RX，例如：
+
+```text
+SRT1500200015001500#
+```
+
+解析器會忽略 CR/LF，因此 Serial Monitor 的行尾選項不影響封包解析。當馬達或舵機輸出改變，以及 failsafe 啟動時，D1/TX 最快每 100 ms 輸出一筆：
+
+```text
+V M1=500 M2=500 S1=1500 S2=1500 FS=0
+```
+
+- `M1`、`M2`：差速混控後的邏輯需求，範圍 -500 至 +500。
+- `S1`、`S2`：D9、D10 舵機微秒命令。
+- `FS`：`0` 表示正常控制，`1` 表示 failsafe 已停止馬達。
+
+除錯採「只輸出變化、100 ms 限頻、TX 緩衝有空間才送出」策略，避免 9600-baud 輸出阻塞 V7RC 接收。
 
 ## 原始碼結構
 
@@ -135,7 +156,7 @@ tests/
 ./tests/run_tests.sh
 ```
 
-目前 Nano 新、舊 bootloader FQBN 均已編譯通過。D0/RX 硬體 UART 版本使用 3,920 bytes Flash（12%）及 260 bytes SRAM（12%）。
+目前 Nano 新、舊 bootloader FQBN 均已編譯通過。RX 模擬與 TX 除錯版本使用 4,784 bytes Flash（15%）及 295 bytes SRAM（14%）。
 
 ## 文件
 

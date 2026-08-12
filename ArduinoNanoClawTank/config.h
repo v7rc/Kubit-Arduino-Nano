@@ -5,9 +5,12 @@
 
 namespace Config {
 
-// V7RC receiver uses the Nano hardware UART input on D0/RX. D1/TX is not
-// connected and the firmware never writes to Serial.
+// D0/RX receives V7RC packets (or test packets from a serial terminal).
+// D1/TX emits rate-limited vehicle state changes for debugging.
 constexpr unsigned long V7RC_UART_BAUD = 9600;
+constexpr bool DEBUG_OUTPUT_ENABLED = true;
+constexpr unsigned long DEBUG_OUTPUT_INTERVAL_MS = 100;
+constexpr uint8_t DEBUG_MIN_WRITE_SPACE = 48;
 
 constexpr uint8_t M1_DIRECTION_PIN = 4;
 constexpr uint8_t M1_PWM_PIN = 5;

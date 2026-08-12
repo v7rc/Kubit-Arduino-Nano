@@ -8,7 +8,8 @@
 
 ### 1. 通訊
 
-- 以 D0/RX、9600 baud 的硬體 `Serial` 接收資料；D1/TX 不接線且韌體不得傳送資料。
+- 以 D0/RX、9600 baud 的硬體 `Serial` 接收資料；D1/TX 輸出限頻的載具狀態變化。
+- D0/RX 可由序列終端送入 `SRT` 封包，模擬 V7RC APP 輸入。
 - 逐 byte 處理資料，不阻塞主迴圈。
 - 辨識固定格式 `SRTdddddddddddddddd#`，其中每個 `d` 都是十進位數字。
 - 支援半包、黏包、前置雜訊及錯誤後重新同步。
@@ -45,7 +46,8 @@
 - 腳位、鮑率、deadband、timeout、反轉及舵機限制集中設定。
 - 解析器與 actuator 輸出邏輯分離。
 - 不使用 Arduino `String`，不在主流程使用阻塞式 `delay()`。
-- 不使用 `SoftwareSerial` 或 `Serial.print()`；唯一硬體 UART 專供 V7RC 資料接收。
+- 不使用 `SoftwareSerial`；硬體 UART 的 RX 接收協定，TX 僅輸出非阻塞、限頻的除錯狀態。
+- TX 只在載具狀態改變時排程，最小間隔 100 ms，輸出 M1、M2、D9、D10 與 failsafe。
 - 可使用共用 Arduino CLI container 為 Arduino Nano 編譯成功。
 
 ## 不在 MVP 範圍

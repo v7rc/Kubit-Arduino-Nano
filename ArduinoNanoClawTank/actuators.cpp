@@ -57,19 +57,24 @@ void actuatorsBegin() {
   auxServo.writeMicroseconds(Config::AUX_CENTER_US);
 }
 
-void applyPacket(const V7RCPacket& packet) {
+AppliedVehicleState applyPacket(const V7RCPacket& packet) {
   const TankDriveMix drive =
       mixTankDrive(packet.channels[0], packet.channels[1],
                    Config::MOTOR_DEADBAND, Config::STEERING_REVERSED);
+  const uint16_t clawUs = constrainPulse(
+      packet.channels[2], Config::CLAW_MIN_US, Config::CLAW_MAX_US);
+  const uint16_t liftUs = constrainPulse(
+      packet.channels[3], Config::LIFT_MIN_US, Config::LIFT_MAX_US);
+
   applyMotor(Config::M1_DIRECTION_PIN, Config::M1_PWM_PIN,
              makeMotorCommand(drive.m1, Config::M1_REVERSED));
   applyMotor(Config::M2_DIRECTION_PIN, Config::M2_PWM_PIN,
              makeMotorCommand(drive.m2, Config::M2_REVERSED));
+  clawServo.writeMicroseconds(clawUs);
+  liftServo.writeMicroseconds(liftUs);
 
-  clawServo.writeMicroseconds(constrainPulse(
-      packet.channels[2], Config::CLAW_MIN_US, Config::CLAW_MAX_US));
-  liftServo.writeMicroseconds(constrainPulse(
-      packet.channels[3], Config::LIFT_MIN_US, Config::LIFT_MAX_US));
+  AppliedVehicleState state = {drive.m1, drive.m2, clawUs, liftUs};
+  return state;
 }
 
 void stopMotors() {
