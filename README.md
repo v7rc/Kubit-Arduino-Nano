@@ -17,8 +17,8 @@ V7RC APP -- BLE --> 藍牙接收模組 -- UART --> Arduino Nano
 
 | Nano 腳位 | 功能 | 外部連接 |
 | --- | --- | --- |
-| D2 | SoftwareSerial RX | 藍牙 TX |
-| D3 | SoftwareSerial TX | 藍牙 RX |
+| D0/RX | Hardware Serial RX | V7RC 接收板唯一的 UART 資料輸入；只接收 |
+| D1/TX | Hardware Serial TX | 不接藍牙；韌體不傳送資料 |
 | D4 | M1 DIR | 馬達驅動器 M1 方向 |
 | D5 | M1 PWM | 馬達驅動器 M1 速度 |
 | D6 | M2 PWM | 馬達驅動器 M2 速度 |
@@ -28,7 +28,9 @@ V7RC APP -- BLE --> 藍牙接收模組 -- UART --> Arduino Nano
 | D10 | Servo 2 | 上下，channel 4 |
 | D11 | Servo 3 | 尚未指定，MVP 保持中立 |
 
-所有模組必須共地。Nano I/O 為 5V 邏輯；若藍牙模組 RX 僅容許 3.3V，Nano D3 到模組 RX 之間要加入分壓器或邏輯電平轉換器。舵機與馬達不可直接由 Nano 的 5V 腳供電，應使用容量足夠的獨立電源並共地，以免重啟或損壞板子。
+所有模組必須共地。V7RC 接收資料固定進入 Nano D0/RX，沒有回傳線，D1/TX 保持不接。必須確認接收板輸出電壓與 Nano D0 相容。舵機與馬達不可直接由 Nano 的 5V 腳供電，應使用容量足夠的獨立電源並共地，以免重啟或損壞板子。
+
+D0/RX 也連接 Nano 板載 USB-UART。燒錄韌體或從電腦向 Serial Monitor 傳送資料時，外接接收板可能與 USB-UART 同時驅動 D0；若遇到上傳失敗或資料異常，應先斷開 D0 訊號線，燒錄完成後再接回。韌體不使用 `Serial.print()`，也不由 D1/TX 傳送除錯資料。
 
 ## V7RC VPP 協定
 
@@ -78,7 +80,7 @@ M2 = throttle - steering
 - Arduino Nano（經典 ATmega328P；實際版本待確認）
 - Arduino AVR Boards core（FQBN：`arduino:avr:nano`）
 - `Servo`：Arduino 官方舵機函式庫，控制 D9–D11
-- `SoftwareSerial`：Arduino AVR core 內建，用 D2/D3 接藍牙 UART，通常不需額外安裝
+- 硬體 `Serial`：Arduino AVR core 內建，使用 D0/RX 接收資料，不需額外函式庫
 
 若使用 Arduino CLI，可準備相依項目：
 
@@ -109,9 +111,9 @@ arduino-cli lib install Servo
 - deadband（預設 ±25）
 - failsafe timeout（預設 300 ms）
 - 各舵機最小、中立、最大脈寬
-- D2/D3 軟體 UART或 D0/D1 硬體 UART
+- D0/RX 硬體 UART 接收鮑率（預設 9600）
 
-設定集中於 `ArduinoNanoClawTank/config.h`。目前實作採用 D2/D3 軟體 UART；若要改用 D0/D1，需在實作層切換通訊介面，並停用同一 UART 上的除錯輸出。
+設定集中於 `ArduinoNanoClawTank/config.h`。目前固定使用 D0/RX 硬體 UART，且沒有 UART 除錯輸出；D1/TX 不接藍牙。
 
 ## 原始碼結構
 
@@ -133,7 +135,7 @@ tests/
 ./tests/run_tests.sh
 ```
 
-目前 Nano 新、舊 bootloader FQBN 均已編譯通過。差速混控版本使用 5,532 bytes Flash（18%）及 379 bytes SRAM（18%）。
+目前 Nano 新、舊 bootloader FQBN 均已編譯通過。D0/RX 硬體 UART 版本使用 3,920 bytes Flash（12%）及 260 bytes SRAM（12%）。
 
 ## 文件
 

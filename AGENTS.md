@@ -12,8 +12,8 @@
 
 | 功能 | 腳位 | 說明 |
 | --- | --- | --- |
-| 藍牙 UART RX | D2 | Nano 接收端，接藍牙模組 TX；使用 `SoftwareSerial` |
-| 藍牙 UART TX | D3 | Nano 傳送端，接藍牙模組 RX；若模組 RX 非 5V tolerant，必須分壓／轉換電平 |
+| V7RC UART RX | D0/RX | 唯一的接收資料腳位，使用 Nano 硬體 `Serial` |
+| UART TX | D1/TX | 不接藍牙，韌體不得由此輸出資料 |
 | M1 方向 | D4 | 方向邏輯可由常數反轉 |
 | M1 PWM | D5 | 速度控制 |
 | M2 PWM | D6 | 速度控制 |
@@ -23,7 +23,7 @@
 | 舵機 2／上下 | D10 | V7RC channel 4 |
 | 舵機 3 | D11 | 協定尚未指定，MVP 保持 1500 us 中立位置 |
 
-如果實際硬體將藍牙接在 D0/D1，應以編譯期設定切換到 `Serial`，不可同時讓 USB 除錯文字混入 V7RC 資料流。
+V7RC 接收資料固定使用 D0/RX。D1/TX 不接線；韌體不得呼叫任何 `Serial.print()`／`Serial.write()`，避免將除錯文字送出。D0 同時連到 Nano 的 USB-UART，因此上傳或使用 Serial Monitor 時，外接接收板不可同時驅動 D0，必要時先斷開訊號線。
 
 ## V7RC 協定基線
 
@@ -69,7 +69,7 @@ SRT1500150015001500#
 
 ## 函式庫與資源限制
 
-- 可使用 Arduino AVR core 內建的 `SoftwareSerial`。
+- 使用 Arduino AVR core 的硬體 `Serial`，只接收、不傳送；不得引入 `SoftwareSerial`。
 - 舵機使用官方 `Servo` library。
 - 不引入動態配置、RTOS、JSON 或其他高成本通訊函式庫。
 - Nano 僅有 2 KB SRAM；避免大型緩衝區，接收緩衝以單一封包附近大小為原則。
@@ -88,8 +88,7 @@ SRT1500150015001500#
 ## 尚待硬體確認
 
 - Nano 是 ATmega328P 經典版、Every，或相容板；bootloader 為新或舊。
-- 藍牙模組型號、UART 鮑率與邏輯電壓。
-- 藍牙實際使用 D2/D3 或硬體 UART D0/D1。
+- 藍牙接收板型號、UART 鮑率與 D0 輸入邏輯電壓。
 - M1/M2 的正向電位，以及左右馬達是否需反轉。
 - 三顆舵機的機構用途、允許行程及 D11 控制來源。
 - 蜂鳴器是主動式或被動式。

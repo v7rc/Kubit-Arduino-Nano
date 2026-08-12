@@ -5,10 +5,9 @@
 
 namespace Config {
 
-// Bluetooth UART. D2 is Nano RX (connect to module TX), D3 is Nano TX.
-constexpr uint8_t BT_RX_PIN = 2;
-constexpr uint8_t BT_TX_PIN = 3;
-constexpr unsigned long BT_BAUD = 9600;
+// V7RC receiver uses the Nano hardware UART input on D0/RX. D1/TX is not
+// connected and the firmware never writes to Serial.
+constexpr unsigned long V7RC_UART_BAUD = 9600;
 
 constexpr uint8_t M1_DIRECTION_PIN = 4;
 constexpr uint8_t M1_PWM_PIN = 5;
@@ -46,9 +45,6 @@ constexpr uint16_t AUX_MAX_US = 2000;
 constexpr unsigned long FAILSAFE_TIMEOUT_MS = 300;
 constexpr unsigned long STARTUP_BEEP_MS = 80;
 constexpr unsigned long FAILSAFE_BEEP_MS = 120;
-
-constexpr bool DEBUG_ENABLED = true;
-constexpr unsigned long DEBUG_BAUD = 115200;
 
 }  // namespace Config
 
