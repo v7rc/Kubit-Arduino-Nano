@@ -1,6 +1,6 @@
 # Arduino Nano Claw Tank
 
-這是一個安裝於小型載具機器人的 Arduino Nano 韌體專案。V7RC APP 透過 BLE 連接外接藍牙接收模組；模組再以 UART 將 V7RC VPP 坦克模式封包送至 Nano。Nano 解析左右履帶、爪子與升降通道，驅動兩路直流馬達及舵機。
+這是一個安裝於小型載具機器人的 Arduino Nano 韌體專案。V7RC APP 透過 BLE 連接外接藍牙接收模組；模組再以 UART 將 V7RC VPP 坦克模式封包送至 Nano。Nano 解析轉向、油門、爪子與升降通道，經差速混控後驅動兩路直流馬達及舵機。
 
 目前已提供 MVP 韌體、純 C++ 協定／控制測試及 Arduino CLI 編譯流程。實機使用前仍須確認藍牙鮑率、馬達方向及舵機安全行程。
 
@@ -58,6 +58,19 @@ M2 = throttle - steering
 
 混控結果會限制在 -500 至 +500。中立油門搭配轉向可讓兩顆馬達反向運轉、使載具原地旋轉；前進搭配轉向則會提高一側、降低另一側。若實機左右相反，可切換 `STEERING_REVERSED`，不必交換 CH1/CH2。
 
+常用控制封包與預期混控結果：
+
+| 操作 | 封包 | M1 | M2 |
+| --- | --- | ---: | ---: |
+| 停止 | `SRT1500150015001500#` | 0 | 0 |
+| 全速前進 | `SRT1500200015001500#` | +500 | +500 |
+| 全速後退 | `SRT1500100015001500#` | -500 | -500 |
+| 原地右轉（預設方向） | `SRT2000150015001500#` | +500 | -500 |
+| 原地左轉（預設方向） | `SRT1000150015001500#` | -500 | +500 |
+| 前進並右轉 | `SRT2000200015001500#` | +500 | 0 |
+
+表中的左右方向以 M1 為左側、M2 為右側的安裝方式為前提。若實際車體配置相反，應校正 `M1_REVERSED`、`M2_REVERSED` 或 `STEERING_REVERSED`。
+
 ## 開發需求與函式庫
 
 目標環境：
@@ -74,7 +87,7 @@ arduino-cli core install arduino:avr
 arduino-cli lib install Servo
 ```
 
-本工作區預期使用共用 Arduino CLI Docker container；韌體加入後可從專案根目錄執行：
+本工作區使用共用 Arduino CLI Docker container；可從專案根目錄執行：
 
 ```bash
 /Users/louischuang/.codex/skills/arduino-cli-container/scripts/arduino-container version
@@ -86,9 +99,9 @@ arduino-cli lib install Servo
 
 部分 Nano 使用新版 bootloader，這時將 FQBN 改為 `arduino:avr:nano:cpu=atmega328`。編譯不受 bootloader 選項影響太大，但實機上傳時必須選對處理器版本。
 
-## 預計設定值
+## 設定與實機校正
 
-實作時會把以下內容集中放在 `config.h`，以便實機校正：
+以下內容已集中放在 `ArduinoNanoClawTank/config.h`，以便實機校正：
 
 - 藍牙 UART 鮑率（暫定 9600）
 - 左右馬達方向反轉
@@ -107,7 +120,7 @@ ArduinoNanoClawTank/
 ├── ArduinoNanoClawTank.ino  # setup、主迴圈、UART 與 failsafe
 ├── config.h                 # 腳位與可校正參數
 ├── v7rc_protocol.*          # 無動態配置的逐 byte 解析器
-├── control_math.*           # deadband、方向與 PWM 映射
+├── control_math.*           # CH1/CH2 deadband、差速混控與 PWM 映射
 └── actuators.*              # 馬達、舵機與非阻塞蜂鳴器輸出
 tests/
 ├── test_main.cpp            # 主機端協定與控制測試
