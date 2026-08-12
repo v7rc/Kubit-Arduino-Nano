@@ -58,12 +58,13 @@ void actuatorsBegin() {
 }
 
 void applyPacket(const V7RCPacket& packet) {
+  const TankDriveMix drive =
+      mixTankDrive(packet.channels[0], packet.channels[1],
+                   Config::MOTOR_DEADBAND, Config::STEERING_REVERSED);
   applyMotor(Config::M1_DIRECTION_PIN, Config::M1_PWM_PIN,
-             makeMotorCommand(packet.channels[0], Config::M1_REVERSED,
-                              Config::MOTOR_DEADBAND));
+             makeMotorCommand(drive.m1, Config::M1_REVERSED));
   applyMotor(Config::M2_DIRECTION_PIN, Config::M2_PWM_PIN,
-             makeMotorCommand(packet.channels[1], Config::M2_REVERSED,
-                              Config::MOTOR_DEADBAND));
+             makeMotorCommand(drive.m2, Config::M2_REVERSED));
 
   clawServo.writeMicroseconds(constrainPulse(
       packet.channels[2], Config::CLAW_MIN_US, Config::CLAW_MAX_US));

@@ -16,6 +16,9 @@ constexpr uint8_t M2_PWM_PIN = 6;
 constexpr uint8_t M2_DIRECTION_PIN = 7;
 constexpr bool M1_REVERSED = false;
 constexpr bool M2_REVERSED = false;
+// With false: CH1=1000 turns left and CH1=2000 turns right. Toggle this if
+// the installed drivetrain responds in the opposite direction.
+constexpr bool STEERING_REVERSED = false;
 
 constexpr uint8_t BUZZER_PIN = 8;
 // Leave false until the buzzer is confirmed to be an active buzzer.

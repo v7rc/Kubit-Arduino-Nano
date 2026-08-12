@@ -81,20 +81,41 @@ void testInvalidPacketsDoNotChangeOutput() {
   }
 }
 
-void testMotorMapping() {
-  MotorCommand command = makeMotorCommand(1500, false, 25);
+void testTankMixing() {
+  TankDriveMix mix = mixTankDrive(1500, 1500, 25, false);
+  assert(mix.m1 == 0 && mix.m2 == 0);
+  mix = mixTankDrive(1475, 1525, 25, false);
+  assert(mix.m1 == 0 && mix.m2 == 0);
+
+  // CH2 controls forward and reverse movement of both motors.
+  mix = mixTankDrive(1500, 2000, 25, false);
+  assert(mix.m1 == 500 && mix.m2 == 500);
+  mix = mixTankDrive(1500, 1000, 25, false);
+  assert(mix.m1 == -500 && mix.m2 == -500);
+
+  // CH1 controls turning by applying opposite demands to M1 and M2.
+  mix = mixTankDrive(2000, 1500, 25, false);
+  assert(mix.m1 == 500 && mix.m2 == -500);
+  mix = mixTankDrive(1000, 1500, 25, false);
+  assert(mix.m1 == -500 && mix.m2 == 500);
+  mix = mixTankDrive(2000, 1500, 25, true);
+  assert(mix.m1 == -500 && mix.m2 == 500);
+
+  // Combined forward/right command saturates M1 and slows M2 to zero.
+  mix = mixTankDrive(2000, 2000, 25, false);
+  assert(mix.m1 == 500 && mix.m2 == 0);
+
+  MotorCommand command = makeMotorCommand(0, false);
   assert(command.pwm == 0);
   assert(command.directionHigh);
-  assert(makeMotorCommand(1475, false, 25).pwm == 0);
-  assert(makeMotorCommand(1525, false, 25).pwm == 0);
 
-  command = makeMotorCommand(2000, false, 25);
+  command = makeMotorCommand(500, false);
   assert(command.pwm == 255 && command.directionHigh);
-  command = makeMotorCommand(1000, false, 25);
+  command = makeMotorCommand(-500, false);
   assert(command.pwm == 255 && !command.directionHigh);
-  command = makeMotorCommand(2000, true, 25);
+  command = makeMotorCommand(500, true);
   assert(command.pwm == 255 && !command.directionHigh);
-  command = makeMotorCommand(1750, false, 25);
+  command = makeMotorCommand(250, false);
   assert(command.pwm > 0 && command.pwm < 255);
 }
 }  // namespace
@@ -104,7 +125,7 @@ int main() {
   testNoisePartialAndResynchronization();
   testEveryPacketSplitBoundary();
   testInvalidPacketsDoNotChangeOutput();
-  testMotorMapping();
+  testTankMixing();
   std::cout << "All V7RC protocol and control tests passed.\n";
   return 0;
 }

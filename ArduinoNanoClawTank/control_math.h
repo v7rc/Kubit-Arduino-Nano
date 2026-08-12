@@ -8,7 +8,14 @@ struct MotorCommand {
   bool directionHigh;
 };
 
-MotorCommand makeMotorCommand(uint16_t channelValue, bool reversed,
-                              uint16_t deadband);
+struct TankDriveMix {
+  // Signed motor demand: -500 is full reverse, 0 stop, +500 full forward.
+  int16_t m1;
+  int16_t m2;
+};
+
+TankDriveMix mixTankDrive(uint16_t steeringChannel, uint16_t throttleChannel,
+                          uint16_t deadband, bool steeringReversed);
+MotorCommand makeMotorCommand(int16_t motorDemand, bool reversed);
 
 #endif
